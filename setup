@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+
+# --- KONFIGURASI ---
+TOOL_NAME="rust"
+REPO_NAME="RustCompile"
+GITHUB_REPO="https://github.com/storm-os/$REPO_NAME.git"
+REPO_RAW_URL="https://raw.githubusercontent.com/storm-os/$REPO_NAME/main"
+
+# Warna
+GREEN='\033[92m'
+RED='\033[91m'
+BLUE='\033[94m'
+NC='\033[0m'
+
+# -----------------------------------------------------------------------------
+# --- AUTOMATIC ENVIRONMENT DETECTION & PATH CONFIGURATION ---
+# -----------------------------------------------------------------------------
+if [ -d "/data/data/com.termux" ]; then
+    echo -e "${GREEN}[!] Environment detected: Termux${NC}"
+    BIN_DIR="$PREFIX/bin"
+    INSTALL_DIR="$PREFIX/share/$REPO_NAME"
+
+    NEEDS_SUDO=false
+    pkg install -y rust curl
+else
+    echo -e "${GREEN}[!] Environment detected: Standard Linux${NC}"
+    BIN_DIR="/usr/local/bin"
+    INSTALL_DIR="/opt/$REPO_NAME"
+
+    NEEDS_SUDO=true
+    sudo apt install -y rust curl
+fi
+
+WRAPPER_PATH="$BIN_DIR/$TOOL_NAME"
+
+
+echo -e "${GREEN}[!] Start Installation ${REPO_NAME} [!] ${NC}"
+
+
+# 1. Cloning repository
+if $NEEDS_SUDO; then
+    sudo mkdir -p "$INSTALL_DIR"
+    if [ -d "$INSTALL_DIR/.git" ]; then
+        cd "$INSTALL_DIR" && sudo git pull
+    else
+        sudo git clone "$GITHUB_REPO" "$INSTALL_DIR"
+    fi
+    sudo mkdir -p "$INSTALL_DIR/src"
+    sudo chown $USER "$INSTALL_DIR" -R 2>/dev/null
+else
+    mkdir -p "$INSTALL_DIR"
+    if [ -d "$INSTALL_DIR/.git" ]; then
+        cd "$INSTALL_DIR" && git pull
+    else
+        git clone "$GITHUB_REPO" "$INSTALL_DIR"
+    fi
+    mkdir -p "$INSTALL_DIR/src"
+fi
+
+
+cd "$INSTALL_DIR" || exit
+
+
+# 2. Ambil Dependensi & Buat Cargo.toml
+echo -e "${BLUE}[*] Fetching Cargo.toml from GitHub.${NC}"
+curl -sSL "$REPO_RAW_URL/Cargo.toml" -o Cargo.toml
+touch src/main.rs
+
+
+# 3. Pre-build
+echo -e "${BLUE}[*] Pre-compiling 60 dependencies (this might take a while)${NC}"
+cargo build --release
+
+
+# 4. MEMBUAT WRAPPER OTOMATIS
+echo -e "${GREEN}[+] Installing global wrapper${NC}"
+
+
+# Logika pembuatan file wrapper mengikuti NEEDS_SUDO
+if $NEEDS_SUDO; then
+    sudo bash -c "cat << 'EOF' > $WRAPPER_PATH
+#!/usr/bin/env bash
+ENGINE=\"$INSTALL_DIR\"
+
+if [ \"\$1\" == \"build\" ]; then
+    NAME=\$2
+    FILE=\$3
+
+    if [ -z \"\$NAME\" ] || [ -z \"\$FILE\" ]; then
+        echo \"Usage: rust build <output_name> <source.rs>\"
+        exit 1
+    fi
+
+    SOURCE_REAL_PATH=\$(realpath \"\$FILE\")
+    cp \"\$SOURCE_REAL_PATH\" \"\$ENGINE/src/main.rs\"
+
+    cd \"\$ENGINE\" || exit
+    cargo build -q --release
+
+    if [ -f \"target/release/rust_engine\" ]; then
+        cp \"target/release/rust_engine\" \"\${OLDPWD}/\$NAME\"
+        echo -e \"[✓] Success! Compile Binary \$NAME\ is ready."
+    fi
+else
+    rustc \"\$@\"
+fi
+EOF"
+    sudo chmod +x "$WRAPPER_PATH"
+else
+    cat << 'EOF' > $WRAPPER_PATH
+#!/usr/bin/env bash
+ENGINE=" $INSTALL_DIR"
+
+if [ "$1" == "build" ]; then
+    NAME=$2
+    FILE=$3
+
+    if [ -z "$NAME" ] || [ -z "$FILE" ]; then
+        echo "Usage: rust build <output_name> <source.rs>"
+        exit 1
+    fi
+
+    SOURCE_REAL_PATH=$(realpath "$FILE")
+    cp "$SOURCE_REAL_PATH" "$ENGINE/src/main.rs"
+
+    cd "$ENGINE" || exit
+    cargo build -q --release
+
+    if [ -f "target/release/rust_engine" ]; then
+        cp "target/release/rust_engine" "${OLDPWD}/$NAME"
+        echo -e "[✓] Success! Compile Binary $NAME"
+    fi
+else
+    rustc "$@"
+fi
+EOF
+    chmod +x "$WRAPPER_PATH"
+fi
+
+echo -e "${GREEN}\n####################################################${NC}"
+echo -e "${GREEN}[✓] PATH STORM: ${INSTALL_DIR}${NC}"
+echo -e "${GREEN}[✓] PATH WRAPPER: ${BIN_DIR}${NC}"
+echo -e "${GREEN}[✓] INSTALLATION COMPLETE${NC}"
+echo -e "${GREEN}[✓] USE: rust build <output> <input>${NC}"
+echo -e "${GREEN}####################################################${NC}"
