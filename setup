@@ -149,8 +149,9 @@ fi
 
 
 echo -e "${GREEN}\n####################################################${NC}"
-echo -e "${GREEN}[✓] PATH COMPILER: ${INSTALL_DIR}/${TOOL_NAME}${NC}"
-echo -e "${GREEN}[✓] PATH WRAPPER: ${BIN_DIR}${NC}"
+echo -e "${GREEN}[✓] PATH COMPILER: ${INSTALL_DIR}${NC}"
+echo -e "${GREEN}[✓] PATH WRAPPER: ${BIN_DIR}/${TOOL_NAME}${NC}"
+
 echo -e "${GREEN}[✓] INSTALLATION COMPLETE${NC}"
 echo -e "${GREEN}[✓] USE: rust build <output> <input>${NC}"
 echo -e "${GREEN}####################################################${NC}"
