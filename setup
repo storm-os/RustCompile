@@ -76,7 +76,7 @@ if [ -f "temp_deps.toml" ]; then
     cat temp_deps.toml > Cargo.toml
     rm temp_deps.toml
 fi
-touch src/main.rs
+echo 'fn main() { println!("Rust Engine Ready!"); }' > src/main.rs
 
 
 # 3. Pre-build (LOGIKA KAMU)
