@@ -23,7 +23,7 @@ itertools = "0.12"
 parking_lot = "0.12"
 url = "2"
 base64 = "0.22"
-base64 = "0.21"
+
 sha2 = "0.10"
 toml = "0.8"
 serde_yaml = "0.9"
