@@ -109,7 +109,6 @@ if [ \"\$1\" == \"build\" ]; then
 
     if [ -f target/release/rust_engine ]; then
         cp target/release/rust_engine \${OLDPWD}/\$NAME
-        echo -e \"[✓] Success! Compile Binary \$NAME\"
     fi
 else
     rustc \"\$@\"
@@ -138,7 +137,6 @@ if [ "\$1" == "build" ]; then
 
     if [ -f target/release/rust_engine ]; then
         cp target/release/rust_engine \${OLDPWD}/\$NAME
-        echo -e "[✓] Success! Compile Binary \$NAME"
     fi
 else
     rustc "\$@"
